@@ -15,8 +15,12 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return "Server health, time and version"', () => {
+      expect(appController.getHello()).resolves.toStrictEqual({
+        status: 'Blurg is healthy',
+        time: `${new Date().getFullYear()} ${new Date().getMonth()} ${new Date().getDay()}`,
+        version: 'v1',
+      });
     });
   });
 });
