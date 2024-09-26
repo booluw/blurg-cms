@@ -1,37 +1,54 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+
 import { AuthUserDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+
 import { prisma } from 'config/prisma';
+import { bcryptSalt, findUserByEmail } from 'utils/helper';
 
 @Injectable()
 export class AuthService {
-  async create(user: AuthUserDto) {
+  async register(user: AuthUserDto) {
     try {
       // encrypt password
-      // user.password = bcrypt
+      user.password = bcrypt.hashSync(
+        user.email + ' ' + user.email,
+        bcryptSalt(),
+      );
+
       await prisma.users.create({
         data: {
           ...user,
         },
       });
+
+      return new HttpException({ message: 'User created' }, HttpStatus.OK);
     } catch (error) {
       throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  findAll() {
-    return `This action returns all auth`;
-  }
+  async login(auth: AuthUserDto) {
+    try {
+      const user = await findUserByEmail(auth.email);
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+      const compareHash = bcrypt.compareSync(auth.password, user.password);
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+      if (compareHash) {
+        return await prisma.users.findUnique({
+          where: { uid: user.uid },
+          include: {
+            posts: true,
+          },
+        });
+      } else {
+        throw new HttpException(
+          { error: 'Password/Email incorrect' },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+    } catch (error) {
+      throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }
