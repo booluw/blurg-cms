@@ -1,7 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import { isEmail, isEmpty } from 'class-validator';
 import { prisma } from 'config/prisma';
-import { V4 } from 'paseto';
+import * as jsonwebtoken from 'jsonwebtoken';
 
 export function bcryptSalt() {
   return bcrypt.genSaltSync(10);
@@ -32,7 +32,6 @@ export async function findUserByEmail(email: string) {
 
     if (isEmpty(user)) throw Error('User does not exist');
     return user;
-
   } catch (error) {
     throw Error(error);
   }
@@ -43,7 +42,7 @@ export async function getUserFromRequest(req: any) {
     throw Error('You must be logged in');
   }
 
-  const userId = V4.verify(
+  const userId = jsonwebtoken.verify(
     req.headers.authorization.split(' ')[1],
     process.env.SUPABASE_DB,
   ) as any;

@@ -5,6 +5,7 @@ import { AuthUserDto } from './dto/create-auth.dto';
 
 import { prisma } from 'config/prisma';
 import { bcryptSalt, findUserByEmail } from 'utils/helper';
+import * as jsonwebtoken from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
@@ -35,12 +36,26 @@ export class AuthService {
       const compareHash = bcrypt.compareSync(auth.password, user.password);
 
       if (compareHash) {
-        return await prisma.users.findUnique({
+        const response = await prisma.users.findUnique({
           where: { uid: user.uid },
           include: {
             posts: true,
           },
         });
+
+        const token = jsonwebtoken.sign(
+          { userId: user.uid },
+          process.env.SUPABASE_DB,
+          { expiresIn: '1h' },
+        );
+
+        const refresh = jsonwebtoken.sign(
+          { userId: user.uid },
+          process.env.SUPABASE_DB,
+          { expiresIn: '1d' },
+        );
+
+        return { user: response, token, refresh };
       } else {
         throw new HttpException(
           { error: 'Password/Email incorrect' },
