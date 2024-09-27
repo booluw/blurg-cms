@@ -1,26 +1,85 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { prisma } from 'config/prisma';
+import { getUserFromRequest } from 'utils/helper';
 
 @Injectable()
 export class PostsService {
-  create(createPostDto: CreatePostDto) {
-    return 'This action adds a new post';
+  async create(post: CreatePostDto, req: any) {
+    try {
+      const user = await getUserFromRequest(req);
+      return await prisma.posts.createManyAndReturn({
+        data: {
+          ...post,
+          authorUid: user.uid,
+        },
+      });
+    } catch (error) {
+      throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
-  findAll() {
-    return `This action returns all posts`;
+  async findAll(req: any) {
+    try {
+      const user = await getUserFromRequest(req);
+
+      return await prisma.posts.findMany({ where: { authorUid: user.uid } });
+    } catch (error) {
+      throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} post`;
+  async findOne(id: number) {
+    try {
+      return await prisma.posts.findUnique({ where: { id } });
+    } catch (error) {
+      throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
-  update(id: number, updatePostDto: UpdatePostDto) {
-    return `This action updates a #${id} post`;
+  async update(id: number, data: CreatePostDto, req: any) {
+    try {
+      const user = await getUserFromRequest(req);
+      const post = await prisma.posts.findUnique({ where: { id } });
+
+      if (post.authorUid !== user.uid) {
+        return new HttpException(
+          { error: 'You cannot edit this post' },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      await prisma.posts.update({
+        where: {
+          id,
+          authorUid: user.uid,
+        },
+        data: {
+          ...data,
+        },
+      });
+
+      return { message: 'Post updated' };
+    } catch (error) {
+      throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} post`;
+  async remove(id: number, req: any) {
+    try {
+      const user = await getUserFromRequest(req);
+      const post = await prisma.posts.findUnique({ where: { id } });
+
+      if (user.uid !== post.authorUid) {
+        return new HttpException({ error: '' }, HttpStatus.UNAUTHORIZED);
+      }
+
+      await prisma.posts.delete({ where: { id } });
+
+      return { message: 'Post deleted' };
+    } catch (error) {
+      throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }
