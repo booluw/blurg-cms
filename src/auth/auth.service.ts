@@ -12,10 +12,7 @@ export class AuthService {
   async register(user: AuthUserDto) {
     try {
       // encrypt password
-      user.password = bcrypt.hashSync(
-        user.email + ' ' + user.email,
-        bcryptSalt(),
-      );
+      user.password = bcrypt.hashSync(user.password, bcryptSalt());
 
       await prisma.users.create({
         data: {
@@ -34,6 +31,8 @@ export class AuthService {
       const user = await findUserByEmail(auth.email);
 
       const compareHash = bcrypt.compareSync(auth.password, user.password);
+
+      console.log(compareHash);
 
       if (compareHash) {
         const response = await prisma.users.findUnique({

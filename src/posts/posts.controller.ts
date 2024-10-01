@@ -14,11 +14,11 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { JwtAuthGuard } from 'guards/jwt-auth.guards';
 
 @Controller('posts')
-@UseGuards(JwtAuthGuard)
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   create(@Body() createPostDto: CreatePostDto, @Req() req: any) {
     return this.postsService.create(createPostDto, req);
   }
@@ -34,6 +34,7 @@ export class PostsController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   update(
     @Param('id') id: string,
     @Body() data: CreatePostDto,
@@ -43,6 +44,7 @@ export class PostsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string, @Req() req: any) {
     return this.postsService.remove(+id, req);
   }

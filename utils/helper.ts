@@ -48,8 +48,15 @@ export async function getUserFromRequest(req: any) {
   ) as any;
 
   try {
-    return await findUserById(userId);
+    return await findUserById(userId.userId);
   } catch (error) {
     throw Error(error);
   }
 }
+
+export const toJson = (param: any): any => {
+  return JSON.stringify(
+    param,
+    (key, value) => (typeof value === 'bigint' ? value.toString() : value), // return everything else unchanged
+  );
+};

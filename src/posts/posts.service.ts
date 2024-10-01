@@ -1,20 +1,21 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
-import { UpdatePostDto } from './dto/update-post.dto';
 import { prisma } from 'config/prisma';
-import { getUserFromRequest } from 'utils/helper';
+import { getUserFromRequest, toJson } from 'utils/helper';
 
 @Injectable()
 export class PostsService {
   async create(post: CreatePostDto, req: any) {
     try {
       const user = await getUserFromRequest(req);
-      return await prisma.posts.createManyAndReturn({
+      const response = await prisma.posts.createManyAndReturn({
         data: {
           ...post,
           authorUid: user.uid,
         },
       });
+
+      return toJson(response);
     } catch (error) {
       throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -24,7 +25,12 @@ export class PostsService {
     try {
       const user = await getUserFromRequest(req);
 
-      return await prisma.posts.findMany({ where: { authorUid: user.uid } });
+      return toJson(
+        await prisma.posts.findMany({
+          where: { authorUid: user.uid },
+          include: { author: true },
+        }),
+      );
     } catch (error) {
       throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -32,7 +38,12 @@ export class PostsService {
 
   async findOne(id: number) {
     try {
-      return await prisma.posts.findUnique({ where: { id } });
+      return toJson(
+        await prisma.posts.findUnique({
+          where: { id },
+          include: { author: true },
+        }),
+      );
     } catch (error) {
       throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
