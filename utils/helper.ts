@@ -1,3 +1,4 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { isEmail, isEmpty } from 'class-validator';
 import { prisma } from 'config/prisma';
@@ -30,10 +31,15 @@ export async function findUserByEmail(email: string) {
   try {
     const user = await prisma.users.findUnique({ where: { email } });
 
-    if (isEmpty(user)) throw Error('User does not exist');
+    if (isEmpty(user)) {
+      throw new HttpException(
+        { error: 'User does not exist' },
+        HttpStatus.NOT_FOUND,
+      );
+    }
     return user;
   } catch (error) {
-    throw Error(error);
+    throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }
 
