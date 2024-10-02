@@ -4,7 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthUserDto } from './dto/create-auth.dto';
 
 import { prisma } from 'config/prisma';
-import { bcryptSalt, findUserByEmail } from 'utils/helper';
+import { bcryptSalt, findUserByEmail, toJson } from 'utils/helper';
 import * as jsonwebtoken from 'jsonwebtoken';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class AuthService {
 
       return new HttpException({ message: 'User created' }, HttpStatus.OK);
     } catch (error) {
-      throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     }
   }
 
@@ -31,8 +31,6 @@ export class AuthService {
       const user = await findUserByEmail(auth.email);
 
       const compareHash = bcrypt.compareSync(auth.password, user.password);
-
-      console.log(compareHash);
 
       if (compareHash) {
         const response = await prisma.users.findUnique({
@@ -54,15 +52,15 @@ export class AuthService {
           { expiresIn: '1d' },
         );
 
-        return { user: response, token, refresh };
+        return toJson({ user: response, token, refresh });
       } else {
         throw new HttpException(
-          { error: 'Password/Email incorrect' },
+          { response: { error: 'Password/Email incorrect' } },
           HttpStatus.UNAUTHORIZED,
         );
       }
     } catch (error) {
-      throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     }
   }
 }

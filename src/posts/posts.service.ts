@@ -36,6 +36,22 @@ export class PostsService {
     }
   }
 
+  async findAllUserPosts(userid: string) {
+    try {
+      return toJson(
+        await prisma.posts.findMany({
+          where: { authorUid: userid },
+          include: { author: true },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+      );
+    } catch (error) {
+      throw new HttpException({ error }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   async findOne(id: number) {
     try {
       return toJson(
