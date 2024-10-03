@@ -9,4 +9,5 @@ export class CreatePostDto {
   @IsOptional()
   tags: string[];
   authorUid: string;
+  imgUrl: string;
 }
